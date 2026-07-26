@@ -159,7 +159,6 @@ function loadImage(file) {
         setProcessButtonsDisabled(false);
         auditImage(file);
 
-        // On mobile, switch to preview view when file is loaded
         if (window.innerWidth <= 768) {
             switchMobileView('preview');
         }
@@ -204,6 +203,15 @@ async function auditImage(file) {
             method: "POST",
             body: file
         });
+        
+        const contentType = resp.headers.get("content-type") || "";
+        if (!resp.ok || !contentType.includes("application/json")) {
+            platformEl.innerText = "Standalone Offline Mode";
+            confEl.innerText = "Local Canvas";
+            signalsEl.innerHTML = "<span style='font-size:0.75rem; color:#a5b4fc;'>Running standalone client engine</span>";
+            return;
+        }
+
         const data = await resp.json();
         platformEl.innerText = data.platform || "Unknown / Clean";
         confEl.innerText = data.confidence || "Standard";
@@ -224,8 +232,9 @@ async function auditImage(file) {
             signalsEl.innerHTML = "<span style='font-size:0.75rem; color:#94a3b8;'>No AI signatures detected</span>";
         }
     } catch (err) {
-        platformEl.innerText = "Local inspection active";
-        console.error(err);
+        platformEl.innerText = "Standalone Offline Mode";
+        confEl.innerText = "Local Canvas";
+        signalsEl.innerHTML = "<span style='font-size:0.75rem; color:#a5b4fc;'>Running standalone client engine</span>";
     }
 }
 
@@ -248,14 +257,86 @@ async function handleMagicWandClick(e) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: originalB64, x: px, y: py })
         });
-        const res = await resp.json();
-        if (res.bbox) {
-            customRegions.push(res.bbox);
-            showToast(`🪄 Magic Wand Box: [x:${res.bbox[0]}, y:${res.bbox[1]}, w:${res.bbox[2]}, h:${res.bbox[3]}]`);
+        
+        const contentType = resp.headers.get("content-type") || "";
+        if (resp.ok && contentType.includes("application/json")) {
+            const res = await resp.json();
+            if (res.bbox) {
+                customRegions.push(res.bbox);
+                showToast(`🪄 Magic Wand Box: [x:${res.bbox[0]}, y:${res.bbox[1]}, w:${res.bbox[2]}, h:${res.bbox[3]}]`);
+                return;
+            }
         }
     } catch (err) {
         console.error(err);
     }
+
+    // Local fallback region selector box when server API unavailable
+    const boxW = Math.round(img.naturalWidth * 0.15);
+    const boxH = Math.round(img.naturalHeight * 0.15);
+    const rx = Math.max(0, px - Math.round(boxW / 2));
+    const ry = Math.max(0, py - Math.round(boxH / 2));
+    const localBox = [rx, ry, boxW, boxH];
+    customRegions.push(localBox);
+    showToast(`🪄 Magic Wand Box: [x:${rx}, y:${ry}, w:${boxW}, h:${boxH}]`);
+}
+
+async function processImageClientSide(options) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            let w = img.width;
+            let h = img.height;
+
+            const rotate = options.rotate || 0;
+            if (rotate === 90 || rotate === 270) {
+                canvas.width = h;
+                canvas.height = w;
+            } else {
+                canvas.width = w;
+                canvas.height = h;
+            }
+
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((rotate * Math.PI) / 180);
+
+            const scaleX = options.flip_h ? -1 : 1;
+            const scaleY = options.flip_v ? -1 : 1;
+            ctx.scale(scaleX, scaleY);
+
+            ctx.drawImage(img, -w / 2, -h / 2);
+            ctx.restore();
+
+            // Clear custom regions if specified
+            if (options.regions && options.regions.length > 0) {
+                ctx.save();
+                options.regions.forEach(([rx, ry, rw, rh]) => {
+                    ctx.fillStyle = "#1e293b";
+                    ctx.clearRect(rx, ry, rw, rh);
+                });
+                ctx.restore();
+            }
+
+            // Draw custom copyright stamper if present
+            if (options.watermark_text) {
+                ctx.save();
+                ctx.font = "bold 20px Inter, sans-serif";
+                ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+                ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+                ctx.shadowBlur = 4;
+                ctx.fillText(options.watermark_text, 20, canvas.height - 25);
+                ctx.restore();
+            }
+
+            resolve(canvas.toDataURL("image/jpeg", 0.92));
+        };
+        img.src = originalB64;
+    });
 }
 
 async function processImage() {
@@ -270,7 +351,7 @@ async function processImage() {
     progressSection.style.display = "block";
     progressBarFill.style.width = "20%";
     progressPercent.innerText = "20%";
-    progressText.innerText = "Running visible watermark localized inpainting...";
+    progressText.innerText = "Processing image...";
 
     const backendEl = document.getElementById("backendSelect");
     const sensEl = document.getElementById("sensitivitySelect");
@@ -306,13 +387,27 @@ async function processImage() {
     try {
         progressBarFill.style.width = "60%";
         progressPercent.innerText = "60%";
-        progressText.innerText = "Applying text stamper & metadata stripping...";
+        progressText.innerText = "Applying canvas transformations & watermark cleanup...";
 
         const resp = await fetch("/api/process", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
+
+        const contentType = resp.headers.get("content-type") || "";
+
+        if (!resp.ok || !contentType.includes("application/json")) {
+            console.warn("Server API not available; invoking local client-side canvas engine.");
+            processedB64 = await processImageClientSide(payload.options);
+            document.getElementById("imgAfter").src = processedB64;
+            progressBarFill.style.width = "100%";
+            progressPercent.innerText = "100%";
+            progressText.innerText = "Done! Processed with Standalone Local Canvas Engine";
+            showToast("✨ Processed with Standalone Local Canvas Engine!");
+            if (window.innerWidth <= 768) switchMobileView('preview');
+            return;
+        }
 
         const res = await resp.json();
 
@@ -329,10 +424,22 @@ async function processImage() {
                 switchMobileView('preview');
             }
         } else {
-            alert("Error: " + res.error);
+            showToast("Falling back to local client canvas engine...");
+            processedB64 = await processImageClientSide(payload.options);
+            document.getElementById("imgAfter").src = processedB64;
+            progressBarFill.style.width = "100%";
+            progressPercent.innerText = "100%";
+            progressText.innerText = "Done! Processed with Standalone Local Canvas Engine";
         }
     } catch (err) {
-        alert("Failed to process image: " + err);
+        console.warn("Network error, running standalone client-side engine:", err);
+        processedB64 = await processImageClientSide(payload.options);
+        document.getElementById("imgAfter").src = processedB64;
+        progressBarFill.style.width = "100%";
+        progressPercent.innerText = "100%";
+        progressText.innerText = "Done! Processed with Standalone Local Canvas Engine";
+        showToast("✨ Processed with Standalone Local Canvas Engine!");
+        if (window.innerWidth <= 768) switchMobileView('preview');
     } finally {
         setProcessButtonsDisabled(false);
     }
