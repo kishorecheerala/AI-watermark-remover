@@ -57,7 +57,7 @@ def humanize_filename(
     """
     path = Path(filepath)
     ext = path.suffix.lower()
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
 
     if style == "samsung":
         # Format: YYYYMMDD_HHMMSS.ext (e.g. 20260726_083908.jpg)
@@ -96,9 +96,10 @@ def humanize_exif(image_path: Path | str, camera_model: str = "samsung_s24") -> 
         import piexif
         from PIL import Image
 
-        img = Image.open(p)
+        Image.open(p)
 
-        now_str = datetime.datetime.now().strftime("%Y:%m:%d %H:%M:%S")
+        now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y:%m:%d %H:%M:%S")
+
         zeroth_ifd = {
             piexif.ImageIFD.Make: b"Samsung" if "samsung" in camera_model else b"Canon",
             piexif.ImageIFD.Model: b"Galaxy S24 Ultra" if "samsung" in camera_model else b"EOS R6",

@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import logging
 import shutil
-import subprocess
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
 
 from remove_ai_watermarks.metadata import remove_ai_metadata
 
@@ -54,8 +57,6 @@ def process_audio(
         logger.warning("Metadata stripping fallback (ffmpeg absent): %s", err)
         shutil.copyfile(input_p, output_p)
         stripped_tmp = output_p
-
-
 
     # Step 2: High-frequency & phase perturbation for WAV/PCM files if scipy/soundfile available
     try:
@@ -114,9 +115,9 @@ def suppress_audio_artifacts(audio_data: NDArray[Any], sample_rate: int) -> NDAr
         if audio_data.ndim == 1:
             filtered = signal.filtfilt(b_hp, a_hp, audio_data)
         else:
-            filtered = np.column_stack([signal.filtfilt(b_hp, a_hp, audio_data[:, ch]) for ch in range(audio_data.shape[1])])
+            channels = [signal.filtfilt(b_hp, a_hp, audio_data[:, ch]) for ch in range(audio_data.shape[1])]
+            filtered = np.column_stack(channels)
 
         return filtered
     except Exception:
         return audio_data
-

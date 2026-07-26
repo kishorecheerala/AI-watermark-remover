@@ -16,8 +16,11 @@ score output: one JSON line per file with file, sha256, ai_score, and the
 label evidence when a metadata label existed (for monitoring drift).
 """
 
+from __future__ import annotations
+
 import glob
 import json
+
 import math
 import pickle
 import sys

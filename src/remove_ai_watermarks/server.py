@@ -8,6 +8,7 @@ canvas rotation/flipping, FFT steganography heatmaps, Magic Wand auto-contours, 
 from __future__ import annotations
 
 import base64
+import contextlib
 import json
 import logging
 import mimetypes
@@ -16,7 +17,7 @@ import sys
 import tempfile
 import time
 import traceback
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -37,8 +38,7 @@ def enhance_face_skin(bgr: np.ndarray) -> np.ndarray:
     # Blend smoothed skin with original feature edges
     mask = cv2.Canny(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY), 50, 150)
     mask_3ch = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR) / 255.0
-    res = (sharpened * mask_3ch + smoothed * (1.0 - mask_3ch)).astype(np.uint8)
-    return res
+    return (sharpened * mask_3ch + smoothed * (1.0 - mask_3ch)).astype(np.uint8)
 
 
 def apply_canvas_transforms(bgr: np.ndarray, angle: int, flip_h: bool, flip_v: bool) -> np.ndarray:
@@ -84,30 +84,31 @@ def compute_magic_wand_bbox(bgr: np.ndarray, px: int, py: int) -> list[int] | No
     mask = np.zeros((h + 2, w + 2), np.uint8)
     flags = 4 | (255 << 8) | cv2.FLOODFILL_MASK_ONLY
     cv2.floodFill(gray, mask, (px, py), 255, loDiff=20, upDiff=20, flags=flags)
-    
-    fill_mask = mask[1:h+1, 1:w+1]
+
+    fill_mask = mask[1 : h + 1, 1 : w + 1]
     ys, xs = np.where(fill_mask > 0)
     if len(xs) == 0:
         return None
-        
+
     x0, y0 = int(xs.min()), int(ys.min())
     bw, bh = int(xs.max() - x0 + 1), int(ys.max() - y0 + 1)
-    
+
     pad = 4
     x0 = max(0, x0 - pad)
     y0 = max(0, y0 - pad)
     bw = min(w - x0, bw + pad * 2)
     bh = min(h - y0, bh + pad * 2)
-    
+
     return [x0, y0, bw, bh]
 
 
 def enhance_auto_color(bgr: np.ndarray) -> np.ndarray:
     """Apply CLAHE auto-color balance and exposure enhancement."""
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
+    l_chan, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    cl = clahe.apply(l)
+    cl = clahe.apply(l_chan)
+
     limg = cv2.merge((cl, a, b))
     return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
@@ -122,12 +123,7 @@ def apply_aspect_ratio_fit(bgr: np.ndarray, target_ratio: str, fit_mode: str) ->
     if target_ratio == "original" or not target_ratio:
         return bgr
 
-    ratios = {
-        "1:1": 1.0,
-        "9:16": 9.0 / 16.0,
-        "4:5": 4.0 / 5.0,
-        "16:9": 16.0 / 9.0
-    }
+    ratios = {"1:1": 1.0, "9:16": 9.0 / 16.0, "4:5": 4.0 / 5.0, "16:9": 16.0 / 9.0}
     if target_ratio not in ratios:
         return bgr
 
@@ -139,11 +135,10 @@ def apply_aspect_ratio_fit(bgr: np.ndarray, target_ratio: str, fit_mode: str) ->
         if current_ar > target_ar:
             new_w = int(h * target_ar)
             offset = (w - new_w) // 2
-            return bgr[:, offset:offset + new_w]
-        else:
-            new_h = int(w / target_ar)
-            offset = (h - new_h) // 2
-            return bgr[offset:offset + new_h, :]
+            return bgr[:, offset : offset + new_w]
+        new_h = int(w / target_ar)
+        offset = (h - new_h) // 2
+        return bgr[offset : offset + new_h, :]
 
     if current_ar > target_ar:
         target_w = w
@@ -157,15 +152,14 @@ def apply_aspect_ratio_fit(bgr: np.ndarray, target_ratio: str, fit_mode: str) ->
         bg = cv2.GaussianBlur(bg, (51, 51), 0)
         x_off = (target_w - w) // 2
         y_off = (target_h - h) // 2
-        bg[y_off:y_off + h, x_off:x_off + w] = bgr
+        bg[y_off : y_off + h, x_off : x_off + w] = bgr
         return bg
-    else:
-        bg = np.zeros((target_h, target_w, 3), dtype=np.uint8)
-        bg[:] = (15, 23, 42)
-        x_off = (target_w - w) // 2
-        y_off = (target_h - h) // 2
-        bg[y_off:y_off + h, x_off:x_off + w] = bgr
-        return bg
+    bg = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+    bg[:] = (15, 23, 42)
+    x_off = (target_w - w) // 2
+    y_off = (target_h - h) // 2
+    bg[y_off : y_off + h, x_off : x_off + w] = bgr
+    return bg
 
 
 class RAIWRequestHandler(BaseHTTPRequestHandler):
@@ -187,18 +181,23 @@ class RAIWRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         from urllib.parse import urlparse
+
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
         if path == "/api/health":
             self._set_headers(200)
-            self.wfile.write(json.dumps({
-                "status": "ok",
-                "app": "AI Watermark Remover Studio",
-                "author": "Kishore Cheerala",
-                "version": "1.0.0",
-                "offline": True
-            }).encode("utf-8"))
+            self.wfile.write(
+                json.dumps(
+                    {
+                        "status": "ok",
+                        "app": "AI Watermark Remover Studio",
+                        "author": "Kishore Cheerala",
+                        "version": "1.0.0",
+                        "offline": True,
+                    }
+                ).encode("utf-8")
+            )
             return
 
         if path == "/":
@@ -219,6 +218,7 @@ class RAIWRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         from urllib.parse import urlparse
+
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
@@ -279,7 +279,7 @@ class RAIWRequestHandler(BaseHTTPRequestHandler):
 
                 rep = identify.identify(tmp_path, check_visible=True, check_invisible=True)
                 bgr, _ = image_io.read_bgr_and_alpha(tmp_path)
-                
+
                 fft_heatmap_b64 = ""
                 if bgr is not None:
                     fft_heatmap_b64 = compute_fft_heatmap(bgr)
@@ -340,14 +340,17 @@ class RAIWRequestHandler(BaseHTTPRequestHandler):
             aspect_ratio = options.get("aspect_ratio", "original")
             fit_mode = options.get("fit_mode", "blur_pad")
 
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as in_tmp, \
-                 tempfile.NamedTemporaryFile(suffix=".png", delete=False) as out_tmp:
+            with (
+                tempfile.NamedTemporaryFile(suffix=".png", delete=False) as in_tmp,
+                tempfile.NamedTemporaryFile(suffix=".png", delete=False) as out_tmp,
+            ):
                 in_tmp.write(img_bytes)
                 in_path = Path(in_tmp.name)
                 out_path = Path(out_tmp.name)
 
             try:
-                from remove_ai_watermarks import api, region_eraser, humanizer as hum_mod, image_io
+                from remove_ai_watermarks import api, image_io, region_eraser
+                from remove_ai_watermarks import humanizer as hum_mod
 
                 # Step 1: Visible Watermark Removal
                 bgr_res, removed = api.remove_visible(
@@ -397,7 +400,9 @@ class RAIWRequestHandler(BaseHTTPRequestHandler):
                     tx = w - tw - 20
                     ty = h - 20
                     if tx > 0 and ty > 0:
-                        cv2.rectangle(current_bgr, (tx - 8, ty - th - 8), (tx + tw + 8, ty + baseline + 4), (0, 0, 0), -1)
+                        pt1 = (tx - 8, ty - th - 8)
+                        pt2 = (tx + tw + 8, ty + baseline + 4)
+                        cv2.rectangle(current_bgr, pt1, pt2, (0, 0, 0), -1)
                         cv2.putText(current_bgr, text, (tx, ty), font, scale, (255, 255, 255), thickness, cv2.LINE_AA)
 
                 image_io.write_bgr_with_alpha(out_path, current_bgr, alpha)
@@ -433,14 +438,12 @@ def run_server(host: str = "127.0.0.1", port: int = 8080, open_browser: bool = F
     server_address = (host, port)
     httpd = HTTPServer(server_address, RAIWRequestHandler)
     url = f"http://{host}:{port}"
-    print(f"[*] AI Watermark Remover Studio running at {url}")
     if open_browser:
         import webbrowser
+
         webbrowser.open(url)
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\n[*] Server stopped.")
 
 
 if __name__ == "__main__":
@@ -450,4 +453,3 @@ if __name__ == "__main__":
         if arg.isdigit():
             port = int(arg)
     run_server(port=port, open_browser=open_b)
-

@@ -29,13 +29,13 @@ __version__ = "0.20.0"
 
 __all__ = [
     "__version__",
-    "remove_visible",
-    "visible_provenance",
-    "process_video",
-    "process_audio",
+    "humanize_exif",
     "humanize_filename",
     "is_ai_filename",
-    "humanize_exif",
+    "process_audio",
+    "process_video",
+    "remove_visible",
+    "visible_provenance",
 ]
 
 if TYPE_CHECKING:
@@ -65,5 +65,3 @@ def __getattr__(name: str) -> object:
 
         return getattr(filename_humanizer, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-

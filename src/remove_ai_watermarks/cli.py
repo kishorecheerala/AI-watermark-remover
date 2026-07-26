@@ -1783,12 +1783,12 @@ def cmd_video(
             output_path=output,
             mark_name=mark if mark != "auto" else None,
             region=parsed_region,
-            backend=backend, # type: ignore
+            backend=backend,  # type: ignore
         )
         console.print(f"✓ Video watermark removal complete -> {res}")
     except Exception as e:
         console.print(f"Error processing video: {e}")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 @main.command("audio")
@@ -1821,9 +1821,8 @@ def cmd_audio(
         console.print(f"✓ Audio processing complete -> {res}")
     except Exception as e:
         console.print(f"Error processing audio: {e}")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 if __name__ == "__main__":
     main()
-

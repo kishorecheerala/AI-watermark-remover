@@ -12,14 +12,16 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import cv2
 import numpy as np
-from numpy.typing import NDArray
 
 from remove_ai_watermarks.region_eraser import erase
-from remove_ai_watermarks.watermark_registry import get_mark, mark_keys, remove_auto_marks
+from remove_ai_watermarks.watermark_registry import get_mark, mark_keys
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -69,15 +71,10 @@ def process_video(
     temp_dir = Path(tempfile.mkdtemp(prefix="watermark_remover_video_"))
     temp_no_audio = temp_dir / f"temp_no_audio_{output_p.name}"
 
-
     suffix_lower = output_p.suffix.lower()
-    if suffix_lower == ".avi":
-        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-    else:
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv2.VideoWriter_fourcc(*"MJPG") if suffix_lower == ".avi" else cv2.VideoWriter_fourcc(*"mp4v")
 
     writer = cv2.VideoWriter(str(temp_no_audio), fourcc, fps, (width, height))
-
 
     prev_mask: NDArray[Any] | None = None
     frame_idx = 0
@@ -111,21 +108,16 @@ def process_video(
                         loc = mark_obj.localize(frame)
                         if loc.mask is not None:
                             mask = cv2.bitwise_or(mask, loc.mask)
-                    except Exception:
+                    except Exception as err:
+                        logger.debug("Mark localization error: %s", err)
                         continue
-
 
             # Apply temporal anti-flicker mask smoothing
             if prev_mask is not None and mask.any():
                 # Smooth mask with previous frame mask to avoid rapid visual flickering
                 mask = cv2.bitwise_or(mask, cv2.bitwise_and(prev_mask, mask))
 
-            if mask.any():
-                cleaned_frame = erase(frame, mask=mask, backend=backend, dilate=dilate)
-            else:
-
-
-                cleaned_frame = frame
+            cleaned_frame = erase(frame, mask=mask, backend=backend, dilate=dilate) if mask.any() else frame
 
             prev_mask = mask.copy() if mask.any() else None
             writer.write(cleaned_frame)
@@ -146,15 +138,22 @@ def process_video(
         cmd = [
             ffmpeg,
             "-y",
-            "-i", str(temp_no_audio),
-            "-i", str(input_p),
-            "-c:v", "copy",
-            "-c:a", "copy",
-            "-map", "0:v:0",
-            "-map", "1:a:0?",
+            "-i",
+            str(temp_no_audio),
+            "-i",
+            str(input_p),
+            "-c:v",
+            "copy",
+            "-c:a",
+            "copy",
+            "-map",
+            "0:v:0",
+            "-map",
+            "1:a:0?",
             str(output_p),
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = subprocess.run(cmd, capture_output=True, text=True)  # noqa: S603
+
         if res.returncode != 0:
             logger.warning("ffmpeg audio stitch failed, keeping video without audio: %s", res.stderr)
             shutil.move(str(temp_no_audio), str(output_p))

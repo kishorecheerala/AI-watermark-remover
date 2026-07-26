@@ -7,7 +7,6 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import pytest
 
 from remove_ai_watermarks.audio_engine import process_audio
 from remove_ai_watermarks.video_engine import process_video
@@ -32,7 +31,6 @@ def test_video_engine_processing():
 
         cv2.destroyAllWindows()
 
-
         # Run process_video with region erasure
         res = process_video(
             input_path=input_video,
@@ -56,6 +54,7 @@ def test_video_engine_processing():
 def test_audio_engine_processing():
     """Test audio container stripping and processing with process_audio."""
     import wave
+
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         input_audio = tmp_path / "sample_audio.wav"
@@ -80,4 +79,3 @@ def test_audio_engine_processing():
 
         assert res.exists()
         assert res.stat().st_size > 0
-
