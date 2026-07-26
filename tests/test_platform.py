@@ -55,7 +55,10 @@ class TestDeviceDetection:
         fake_torch = MagicMock()
         fake_torch.cuda.is_available.return_value = False
         fake_torch.xpu.is_available.return_value = True
-        with patch("remove_ai_watermarks.noai.watermark_remover._HAS_TORCH", True), patch("remove_ai_watermarks.noai.watermark_remover.torch", fake_torch):
+        with (
+            patch("remove_ai_watermarks.noai.watermark_remover._HAS_TORCH", True),
+            patch("remove_ai_watermarks.noai.watermark_remover.torch", fake_torch),
+        ):
             assert get_device() == "xpu"
         fake_torch.tensor.assert_called_with([1.0], device="xpu")
 
