@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Capacitor dependencies
         working-directory: mobile
         run: npm ci
@@ -38,12 +41,16 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
+      # Override local.properties with CI Android SDK path
+      - name: Configure Android SDK path
+        run: echo "sdk.dir=$ANDROID_HOME" > mobile/android/local.properties
+
       - name: Make gradlew executable
         run: chmod +x mobile/android/gradlew
 
       - name: Build debug APK
         working-directory: mobile/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Locate and rename APK
         id: apk
