@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: Sync dev environment
-        run: uv sync --frozen --extra dev
+        run: uv sync --extra dev
       - name: Ruff lint
         run: uv run ruff check
       - name: Ruff format check
@@ -41,6 +41,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Sync dev environment
-        run: uv sync --frozen --extra dev
+        run: uv sync --extra dev
       - name: Run tests
         run: uv run pytest -q

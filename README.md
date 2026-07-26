@@ -611,4 +611,9 @@ Legitimate uses — publishing your own work, privacy (stripping metadata that l
 
 ## License
 
-[Apache 2.0](LICENSE). Copyright 2025-2026 wiltodelta.
+[Apache 2.0](LICENSE). Copyright 2025-2026 Kishore Cheerala.
+
+## Acknowledgements
+
+Special thanks to [wiltodelta/remove-ai-watermarks](https://github.com/wiltodelta/remove-ai-watermarks) for foundational research and initial pipeline implementations.
+
