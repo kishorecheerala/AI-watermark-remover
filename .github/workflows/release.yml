@@ -50,8 +50,11 @@ jobs:
       - name: Accept SDK licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Build debug APK
+      - name: Build signed APK
         working-directory: mobile/android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          VERSION_NAME: ${{ github.ref_name }}
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Locate and rename APK
