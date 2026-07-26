@@ -163,8 +163,14 @@ body {
 /* Main Studio Layout */
 .main-content {
     display: grid;
-    grid-template-columns: 380px 1fr;
+    grid-template-columns: 1fr 380px;
     gap: 16px;
+}
+
+@media (min-width: 1280px) {
+    .main-content {
+        grid-template-columns: 360px 1fr 340px;
+    }
 }
 
 .panel {

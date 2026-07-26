@@ -57,24 +57,26 @@ function switchMobileView(view) {
 
     const controlsPanel = document.getElementById("controlsPanel");
     const previewPanel = document.getElementById("previewPanel");
-    const auditCard = document.getElementById("auditCard");
+    const auditPanel = document.getElementById("auditPanel");
 
     if (window.innerWidth <= 768) {
         if (view === 'preview') {
-            previewPanel.style.display = "block";
-            controlsPanel.style.display = "none";
+            if (previewPanel) previewPanel.style.display = "block";
+            if (controlsPanel) controlsPanel.style.display = "none";
+            if (auditPanel) auditPanel.style.display = "none";
         } else if (view === 'controls') {
-            previewPanel.style.display = "none";
-            controlsPanel.style.display = "flex";
-            if (auditCard) auditCard.style.display = "none";
+            if (previewPanel) previewPanel.style.display = "none";
+            if (controlsPanel) controlsPanel.style.display = "flex";
+            if (auditPanel) auditPanel.style.display = "none";
         } else if (view === 'audit') {
-            previewPanel.style.display = "none";
-            controlsPanel.style.display = "flex";
-            if (auditCard) auditCard.style.display = "block";
+            if (previewPanel) previewPanel.style.display = "none";
+            if (controlsPanel) controlsPanel.style.display = "none";
+            if (auditPanel) auditPanel.style.display = "flex";
         }
     } else {
-        previewPanel.style.display = "flex";
-        controlsPanel.style.display = "flex";
+        if (previewPanel) previewPanel.style.display = "flex";
+        if (controlsPanel) controlsPanel.style.display = "flex";
+        if (auditPanel) auditPanel.style.display = "flex";
     }
 }
 
@@ -120,11 +122,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("resize", () => {
         if (window.innerWidth > 768) {
-            document.getElementById("controlsPanel").style.display = "flex";
-            document.getElementById("previewPanel").style.display = "flex";
+            const controlsPanel = document.getElementById("controlsPanel");
+            const previewPanel = document.getElementById("previewPanel");
+            const auditPanel = document.getElementById("auditPanel");
+            if (controlsPanel) controlsPanel.style.display = "flex";
+            if (previewPanel) previewPanel.style.display = "flex";
+            if (auditPanel) auditPanel.style.display = "flex";
+        } else {
+            const activeTab = document.querySelector(".mobile-tab-btn.active");
+            if (activeTab) {
+                const text = activeTab.innerText.toLowerCase();
+                if (text.includes("preview")) switchMobileView('preview');
+                else if (text.includes("control")) switchMobileView('controls');
+                else if (text.includes("metadata")) switchMobileView('audit');
+            }
         }
     });
 
+    // Synchronize initial view to Preview
+    switchMobileView('preview');
     initSlider();
     initZoomLoupe();
 });
@@ -189,17 +205,15 @@ function clearBatch() {
 }
 
 async function auditImage(file) {
-    const auditCard = document.getElementById("auditCard");
     const platformEl = document.getElementById("originPlatform");
     const confEl = document.getElementById("originConfidence");
     const signalsEl = document.getElementById("signalsList");
     const exifTableContainer = document.getElementById("exifTableContainer");
 
-    auditCard.style.display = "block";
-    platformEl.innerText = "Analyzing binary EXIF & AI headers...";
-    confEl.innerText = "-";
-    signalsEl.innerHTML = "<span class='signal-placeholder'>Scanning headers...</span>";
-    exifTableContainer.innerHTML = "<span class='signal-placeholder'>Extracting EXIF metadata tags...</span>";
+    if (platformEl) platformEl.innerText = "Analyzing binary EXIF & AI headers...";
+    if (confEl) confEl.innerText = "-";
+    if (signalsEl) signalsEl.innerHTML = "<span class='signal-placeholder'>Scanning headers...</span>";
+    if (exifTableContainer) exifTableContainer.innerHTML = "<span class='signal-placeholder'>Extracting EXIF metadata tags...</span>";
 
     try {
         const resp = await fetch("/api/identify", {
@@ -217,7 +231,6 @@ async function auditImage(file) {
         console.warn("Backend API offline, running client-side EXIF & AI parser...");
     }
 
-    // Run client-side EXIF & binary parser fallback
     const parsed = await parseFileMetadataClientSide(file);
     renderAuditResults(parsed, file);
 }
@@ -234,7 +247,6 @@ async function parseFileMetadataClientSide(file) {
     let signals = [];
     let exifTable = [];
 
-    // Scan binary header for AI signatures
     const isC2PA = rawText.includes("c2pa") || rawText.includes("jumbf") || rawText.includes("Content Credentials");
     const isMidjourney = rawText.toLowerCase().includes("midjourney") || rawText.includes("Job ID");
     const isDallE = rawText.toLowerCase().includes("dall-e") || rawText.toLowerCase().includes("openai");
@@ -279,13 +291,11 @@ async function parseFileMetadataClientSide(file) {
         confidence = "90% High Risk";
     }
 
-    // Extract EXIF Key-Values
     exifTable.push(["File Name", file.name]);
     exifTable.push(["File Size", `${(file.size / 1024).toFixed(1)} KB`]);
     exifTable.push(["MIME Type", file.type || "image/jpeg"]);
-    exifTable.push(["Header Scan", "128 KB Inspect"]);
+    exifTable.push(["Header Scan", "128 KB Binary Inspect"]);
 
-    // Extract Software tag if found
     const swMatch = rawText.match(/(?:Software|Creator|Generator)\x00+([^\x00]{3,40})/i);
     if (swMatch && swMatch[1]) {
         cameraSoftware = swMatch[1].trim();
@@ -301,7 +311,7 @@ async function parseFileMetadataClientSide(file) {
     }
 
     if (signals.length === 0) {
-        signals.push({ name: "Standard Image Header", vendor: "Clean Camera Photo" });
+        signals.push({ name: "Standard EXIF Header", vendor: "Clean Camera Photo" });
     }
 
     return {
@@ -323,55 +333,55 @@ function renderAuditResults(data, file) {
     const signalsEl = document.getElementById("signalsList");
     const exifTableContainer = document.getElementById("exifTableContainer");
 
-    platformEl.innerText = data.platform || "Unknown / Clean";
-    confEl.innerText = data.confidence || "Standard";
+    if (platformEl) platformEl.innerText = data.platform || "Unknown / Clean";
+    if (confEl) confEl.innerText = data.confidence || "Standard";
     if (cameraEl) cameraEl.innerText = data.cameraSoftware || data.camera_software || "Standard Header";
     if (tagsCountEl) tagsCountEl.innerText = `${data.exifCount || (data.exifTable ? data.exifTable.length : 4)} Tags`;
 
-    // Load dimensions
     const img = new Image();
     img.src = originalB64;
     img.onload = () => {
         if (dimensionsEl) dimensionsEl.innerText = `${img.width} × ${img.height} px`;
-        // Generate live FFT Heatmap Spectrogram if not present
         if (!data.fft_heatmap && !fftHeatmapB64) {
             generateFFTHeatmapClientSide(img);
         }
     };
 
-    // Render signals chips
-    signalsEl.innerHTML = "";
-    if (data.signals && data.signals.length > 0) {
-        data.signals.forEach(s => {
-            const chip = document.createElement("span");
-            chip.className = "signal-chip";
-            chip.innerText = `${s.name} (${s.vendor})`;
-            signalsEl.appendChild(chip);
-        });
-    } else {
-        signalsEl.innerHTML = "<span class='signal-chip'>Standard EXIF Header (No AI Traces)</span>";
+    if (signalsEl) {
+        signalsEl.innerHTML = "";
+        if (data.signals && data.signals.length > 0) {
+            data.signals.forEach(s => {
+                const chip = document.createElement("span");
+                chip.className = "signal-chip";
+                chip.innerText = `${s.name} (${s.vendor})`;
+                signalsEl.appendChild(chip);
+            });
+        } else {
+            signalsEl.innerHTML = "<span class='signal-chip'>Standard EXIF Header (No AI Traces)</span>";
+        }
     }
 
-    // Render EXIF Key-Value Table
-    if (data.exifTable && data.exifTable.length > 0) {
-        let html = "<table class='exif-table'><thead><tr><th>Tag</th><th>Value</th></tr></thead><tbody>";
-        data.exifTable.forEach(([k, v]) => {
-            html += `<tr><td class='tag-name'>${k}</td><td class='tag-val'>${v}</td></tr>`;
-        });
-        html += "</tbody></table>";
-        exifTableContainer.innerHTML = html;
-    } else {
-        exifTableContainer.innerHTML = `
-            <table class='exif-table'>
-                <thead><tr><th>Tag</th><th>Value</th></tr></thead>
-                <tbody>
-                    <tr><td class='tag-name'>File Name</td><td class='tag-val'>${file.name}</td></tr>
-                    <tr><td class='tag-name'>File Size</td><td class='tag-val'>${(file.size/1024).toFixed(1)} KB</td></tr>
-                    <tr><td class='tag-name'>MIME Type</td><td class='tag-val'>${file.type || 'image/jpeg'}</td></tr>
-                    <tr><td class='tag-name'>AI Provenance</td><td class='tag-val'>${data.platform || 'Scanned'}</td></tr>
-                </tbody>
-            </table>
-        `;
+    if (exifTableContainer) {
+        if (data.exifTable && data.exifTable.length > 0) {
+            let html = "<table class='exif-table'><thead><tr><th>Tag</th><th>Value</th></tr></thead><tbody>";
+            data.exifTable.forEach(([k, v]) => {
+                html += `<tr><td class='tag-name'>${k}</td><td class='tag-val'>${v}</td></tr>`;
+            });
+            html += "</tbody></table>";
+            exifTableContainer.innerHTML = html;
+        } else {
+            exifTableContainer.innerHTML = `
+                <table class='exif-table'>
+                    <thead><tr><th>Tag</th><th>Value</th></tr></thead>
+                    <tbody>
+                        <tr><td class='tag-name'>File Name</td><td class='tag-val'>${file.name}</td></tr>
+                        <tr><td class='tag-name'>File Size</td><td class='tag-val'>${(file.size/1024).toFixed(1)} KB</td></tr>
+                        <tr><td class='tag-name'>MIME Type</td><td class='tag-val'>${file.type || 'image/jpeg'}</td></tr>
+                        <tr><td class='tag-name'>AI Provenance</td><td class='tag-val'>${data.platform || 'Scanned'}</td></tr>
+                    </tbody>
+                </table>
+            `;
+        }
     }
 }
 
@@ -385,7 +395,6 @@ function generateFFTHeatmapClientSide(img) {
     const imgData = ctx.getImageData(0, 0, 256, 256);
     const data = imgData.data;
 
-    // Generate frequency domain radial magnitude simulation
     const cx = 128;
     const cy = 128;
     for (let y = 0; y < 256; y++) {
@@ -395,7 +404,6 @@ function generateFFTHeatmapClientSide(img) {
             const dy = y - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Center glow + high frequency ring artifacts
             const mag = Math.sin(dist / 8.0) * 128 + Math.exp(-dist / 30.0) * 255;
             const r = Math.min(255, Math.max(0, Math.round(mag * 0.9)));
             const g = Math.min(255, Math.max(0, Math.round(mag * 0.4)));
@@ -410,7 +418,8 @@ function generateFFTHeatmapClientSide(img) {
 
     ctx.putImageData(imgData, 0, 0);
     fftHeatmapB64 = canvas.toDataURL("image/png");
-    document.getElementById("imgHeatmap").src = fftHeatmapB64;
+    const heatmapEl = document.getElementById("imgHeatmap");
+    if (heatmapEl) heatmapEl.src = fftHeatmapB64;
 }
 
 async function handleMagicWandClick(e) {
@@ -446,7 +455,6 @@ async function handleMagicWandClick(e) {
         console.error(err);
     }
 
-    // Local fallback region selector box when server API unavailable
     const boxW = Math.round(img.naturalWidth * 0.15);
     const boxH = Math.round(img.naturalHeight * 0.15);
     const rx = Math.max(0, px - Math.round(boxW / 2));
@@ -487,7 +495,6 @@ async function processImageClientSide(options) {
             ctx.drawImage(img, -w / 2, -h / 2);
             ctx.restore();
 
-            // Clear custom regions if specified
             if (options.regions && options.regions.length > 0) {
                 ctx.save();
                 options.regions.forEach(([rx, ry, rw, rh]) => {
@@ -497,7 +504,6 @@ async function processImageClientSide(options) {
                 ctx.restore();
             }
 
-            // Draw custom copyright stamper if present
             if (options.watermark_text) {
                 ctx.save();
                 ctx.font = "bold 20px Inter, sans-serif";
@@ -638,14 +644,12 @@ function initSlider() {
         slider.style.left = `${percent}%`;
     };
 
-    // Mouse Events
     slider.addEventListener("mousedown", () => isDragging = true);
     window.addEventListener("mouseup", () => isDragging = false);
     window.addEventListener("mousemove", (e) => {
         if (isDragging) updateSlider(e.clientX);
     });
 
-    // Touch Events for Mobile Responsiveness
     slider.addEventListener("touchstart", (e) => {
         isDragging = true;
         if (e.touches.length > 0) updateSlider(e.touches[0].clientX);
