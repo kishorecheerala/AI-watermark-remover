@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.raiw.watermarkremover"
+    namespace "com.ai.watermarkremover"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.raiw.watermarkremover"
+        applicationId "com.ai.watermarkremover"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">AI Watermark Remover</string>
     <string name="title_activity_main">AI Watermark Remover</string>
-    <string name="package_name">com.raiw.watermarkremover</string>
-    <string name="custom_url_scheme">com.raiw.watermarkremover</string>
+    <string name="package_name">com.ai.watermarkremover</string>
+    <string name="custom_url_scheme">com.ai.watermarkremover</string>
+
 </resources>

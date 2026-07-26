@@ -1,4 +1,4 @@
-package com.raiw.watermarkremover;
+package com.ai.watermarkremover;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -9,8 +9,8 @@ import android.widget.RemoteViews;
 
 public class CleanEdgeWidgetProvider extends AppWidgetProvider {
 
-    public static final String ACTION_CLEAN_LATEST = "com.raiw.watermarkremover.ACTION_CLEAN_LATEST";
-    public static final String ACTION_OPEN_EDITOR = "com.raiw.watermarkremover.ACTION_OPEN_EDITOR";
+    public static final String ACTION_CLEAN_LATEST = "com.ai.watermarkremover.ACTION_CLEAN_LATEST";
+    public static final String ACTION_OPEN_EDITOR = "com.ai.watermarkremover.ACTION_OPEN_EDITOR";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {

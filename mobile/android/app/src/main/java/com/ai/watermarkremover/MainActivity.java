@@ -1,4 +1,5 @@
-package com.raiw.watermarkremover;
+package com.ai.watermarkremover;
+
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;

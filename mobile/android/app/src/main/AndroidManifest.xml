@@ -41,7 +41,7 @@
 
         <!-- Samsung S-Pen Smart Select & Air Command Handler -->
         <activity
-            android:name="com.raiw.watermarkremover.SPenSmartSelectActivity"
+            android:name="com.ai.watermarkremover.SPenSmartSelectActivity"
             android:label="Clean Smart Select Region"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="true">
@@ -55,7 +55,7 @@
 
         <!-- Samsung Quick Settings Tile Service -->
         <service
-            android:name="com.raiw.watermarkremover.CleanTileService"
+            android:name="com.ai.watermarkremover.CleanTileService"
             android:icon="@mipmap/ic_launcher"
             android:label="Clean AI Mark"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
@@ -67,7 +67,7 @@
 
         <!-- Samsung Edge Panel Widget Provider -->
         <receiver
-            android:name="com.raiw.watermarkremover.CleanEdgeWidgetProvider"
+            android:name="com.ai.watermarkremover.CleanEdgeWidgetProvider"
             android:label="AI Watermark Cleaner Edge Widget"
             android:exported="true">
             <intent-filter>

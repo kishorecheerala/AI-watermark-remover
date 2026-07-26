@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import os
-import sys
 import zipfile
 from pathlib import Path
 
@@ -37,6 +35,7 @@ with zipfile.ZipFile(OUTPUT_APK, "w", zipfile.ZIP_DEFLATED) as zf:
 # Copy to mobile/ as well
 if OUTPUT_APK.exists():
     import shutil
+
     shutil.copy(OUTPUT_APK, MOBILE_OUTPUT_APK)
     print(f"✅ Created {OUTPUT_APK} ({OUTPUT_APK.stat().st_size / 1024:.1f} KB)")
     print(f"✅ Created {MOBILE_OUTPUT_APK}")

@@ -455,11 +455,12 @@ import remove_ai_watermarks as raiw
 
 # Clean a file -> writes clean.png, returns the array and what was removed.
 result, removed = raiw.remove_visible("watermarked.png", "clean.png")
-print("removed:", removed)          # e.g. ['Google Gemini sparkle']
+print("removed:", removed)  # e.g. ['Google Gemini sparkle']
 # An empty list means nothing known was found (route to `all` or `erase` instead).
 
 # Array in, array out (BGR numpy). Pick the fill backend: cv2 (default), migan, lama.
 import cv2
+
 clean, removed = raiw.remove_visible(cv2.imread("in.png"), backend="cv2")
 
 # Metadata-stripped screenshot you know is AI-generated: relax detection to recover a
@@ -467,10 +468,11 @@ clean, removed = raiw.remove_visible(cv2.imread("in.png"), backend="cv2")
 raiw.remove_visible("screenshot.png", "clean.png", sensitivity="strict")
 
 # What the file's metadata confirms (drives the default `auto` sensitivity):
-raiw.visible_provenance("in.png")   # e.g. frozenset({'gemini'})
+raiw.visible_provenance("in.png")  # e.g. frozenset({'gemini'})
 
 # Full provenance verdict (platform + watermark inventory + confidence):
 from remove_ai_watermarks.identify import identify
+
 report = identify("in.png")
 ```
 
@@ -490,14 +492,14 @@ engine = InvisibleEngine(pipeline="controlnet")
 engine.remove_watermark(
     Path("watermarked.png"),
     Path("clean.png"),
-    strength=None,          # None = profile default (ControlNet: OpenAI 0.10 / Google 0.15)
+    strength=None,  # None = profile default (ControlNet: OpenAI 0.10 / Google 0.15)
     num_inference_steps=None,  # None = 4 for qwen-zimage, 100 via this API otherwise
-    guidance_scale=None,    # None = 1.0 for qwen-zimage, 7.5 otherwise
-    seed=None,              # random for ControlNet; qwen-zimage resolves None to seed 0
-    adaptive_polish=True,   # detail-targeted polish, self-gating (default on in the CLI)
-    min_resolution=1024,    # upscale tiny inputs to this floor before diffusion
-    max_resolution=0,       # 0 = native; set only to cap GPU/MPS memory
-    upscaler="lanczos",     # or "esrgan" for the floor upscale (needs the 'esrgan' extra)
+    guidance_scale=None,  # None = 1.0 for qwen-zimage, 7.5 otherwise
+    seed=None,  # random for ControlNet; qwen-zimage resolves None to seed 0
+    adaptive_polish=True,  # detail-targeted polish, self-gating (default on in the CLI)
+    min_resolution=1024,  # upscale tiny inputs to this floor before diffusion
+    max_resolution=0,  # 0 = native; set only to cap GPU/MPS memory
+    upscaler="lanczos",  # or "esrgan" for the floor upscale (needs the 'esrgan' extra)
 )
 ```
 

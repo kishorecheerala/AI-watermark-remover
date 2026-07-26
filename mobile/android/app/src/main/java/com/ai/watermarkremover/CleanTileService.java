@@ -1,4 +1,5 @@
-package com.raiw.watermarkremover;
+package com.ai.watermarkremover;
+
 
 import android.annotation.TargetApi;
 import android.content.Intent;
