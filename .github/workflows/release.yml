@@ -1,0 +1,33 @@
+name: Publish GitHub Release with APK
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish Release & APK Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.21.0
+          name: "AI Watermark Remover Studio v0.21.0"
+          body_path: RELEASE.md
+          files: |
+            AI-Watermark-Remover-Studio.apk
+            mobile/AI-Watermark-Remover-Studio.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
