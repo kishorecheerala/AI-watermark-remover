@@ -29,8 +29,6 @@ def test_video_engine_processing():
             writer.write(frame)
         writer.release()
 
-        cv2.destroyAllWindows()
-
         # Run process_video with region erasure
         res = process_video(
             input_path=input_video,
