@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Watermark Remover Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">✨</span>
+                <h1>AI Watermark Remover Studio <span>Enhanced/Customized by Kishore Cheerala</span></h1>
+            </div>
+            <div class="status-badge" id="offlineStatus">
+                <span class="status-dot"></span> 100% Local Offline
+            </div>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <main class="main-content">
+            <!-- Left Panel: Controls & Upload -->
+            <section class="panel control-panel">
+                <div class="card upload-card" id="dropZone">
+                    <input type="file" id="fileInput" accept="image/*,video/*,audio/*" multiple hidden>
+                    <div class="upload-icon">📁</div>
+                    <h3>Drag & Drop Photo(s), Video(s), or Audio Here</h3>
+                    <p>or tap to select files (Single or Batch Queue)</p>
+                    <button class="btn primary-btn" onclick="document.getElementById('fileInput').click()">Select Files</button>
+                </div>
+
+
+                <!-- Batch Queue Box -->
+                <div class="card batch-card" id="batchCard" style="display: none;">
+                    <div class="card-title">
+                        <span>📦 Batch Queue (<span id="batchCount">0</span> files)</span>
+                        <button class="btn secondary-btn-sm" onclick="clearBatch()">Clear Queue</button>
+                    </div>
+                    <div id="batchList" class="batch-list"></div>
+                </div>
+
+                <!-- Provenance Audit Box -->
+                <div class="card audit-card" id="auditCard" style="display: none;">
+                    <div class="card-title">
+                        <span>🔍 Provenance & Metadata Inspector</span>
+                    </div>
+                    <div class="audit-info">
+                        <div class="audit-row">
+                            <span class="label">Detected AI Origin:</span>
+                            <span class="value" id="originPlatform">Analyzing...</span>
+                        </div>
+                        <div class="audit-row">
+                            <span class="label">Confidence:</span>
+                            <span class="value" id="originConfidence">-</span>
+                        </div>
+                        <div id="signalsList" class="signals-list"></div>
+                    </div>
+                </div>
+
+                <!-- Engine Options Card -->
+                <div class="card options-card">
+                    <div class="card-title">⚡ Removal & Studio Controls</div>
+                    
+                    <div class="form-group">
+                        <label for="backendSelect">Inpainting Engine</label>
+                        <select id="backendSelect">
+                            <option value="auto" selected>Auto (LaMa > MI-GAN > OpenCV)</option>
+                            <option value="cv2">OpenCV (Instant CPU)</option>
+                            <option value="migan">MI-GAN (Light ML)</option>
+                            <option value="lama">Big-LaMa (High Quality)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aspectRatioSelect">Aspect Ratio & Social Media Resizer</label>
+                        <select id="aspectRatioSelect">
+                            <option value="original" selected>Original Aspect Ratio</option>
+                            <option value="1:1">1:1 Square (Instagram Feed)</option>
+                            <option value="9:16">9:16 Story / Reel / TikTok</option>
+                            <option value="4:5">4:5 Portrait Feed</option>
+                            <option value="16:9">16:9 Landscape Widescreen</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fitModeSelect">Auto-Expand Canvas Fill Mode</label>
+                        <select id="fitModeSelect">
+                            <option value="blur_pad" selected>Blur Padding (No Content Loss)</option>
+                            <option value="color_pad">Ambient Dark Padding</option>
+                            <option value="cover_crop">Center Crop to Fit</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Canvas Layout Transforms</label>
+                        <div class="btn-group">
+                            <button class="btn secondary-btn-sm" onclick="rotateCanvas(90)">↻ 90°</button>
+                            <button class="btn secondary-btn-sm" onclick="toggleFlip('h')">↔ Flip H</button>
+                            <button class="btn secondary-btn-sm" onclick="toggleFlip('v')">↕ Flip V</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="watermarkText">Custom Copyright Stamper</label>
+                        <input type="text" id="watermarkText" placeholder="e.g. © Kishore Cheerala">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="faceEnhance">
+                            <span>AI Face & Skin Texture Enhancer</span>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoEnhance">
+                            <span>Auto-Color & HDR Contrast Balance</span>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="denoiseToggle">
+                            <span>Denoise & JPEG Compression Cleanup</span>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="stripMetadata" checked>
+                            <span>Strip AI Provenance (C2PA / EXIF / IPTC)</span>
+                        </label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="humanizerToggle">
+                            <span>Analog Humanizer (Film Grain & Lens Simulation)</span>
+                        </label>
+                    </div>
+
+                    <button class="btn action-btn" id="processBtn" disabled onclick="processImage()">
+                        <span>🚀 Clean Watermarks & Process Studio</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Interactive Canvas & Comparison -->
+            <section class="panel preview-panel">
+                <div class="card preview-card">
+                    <div class="card-title">
+                        <span>🖼️ Interactive Preview Studio</span>
+                        <div class="view-mode-tabs">
+                            <button class="tab-btn active" id="tabCompare" onclick="setPreviewMode('compare')">Split Slider</button>
+                            <button class="tab-btn" id="tabHeatmap" onclick="setPreviewMode('heatmap')">🔬 FFT Heatmap</button>
+                            <button class="tab-btn" id="tabZoom" onclick="toggleZoomLoupe()">🔍 200% Zoom</button>
+                            <button class="tab-btn" id="tabWand" onclick="setPreviewMode('wand')">🪄 Magic Wand</button>
+                            <button class="tab-btn" id="tabErase" onclick="setPreviewMode('erase')">Custom Region</button>
+                        </div>
+                    </div>
+
+                    <!-- Split Image Slider Container -->
+                    <div class="image-comparison" id="comparisonContainer">
+                        <img id="imgBefore" src="" alt="Original Image" class="comp-img">
+                        <div class="comp-overlay" id="imgOverlay">
+                            <img id="imgAfter" src="" alt="Cleaned Image" class="comp-img">
+                        </div>
+                        <img id="imgHeatmap" src="" alt="FFT Spectrogram Heatmap" class="comp-img" style="display: none;">
+                        <div class="comp-slider" id="compSlider"></div>
+
+                        <!-- Magnifying Loupe Overlay -->
+                        <div class="zoom-loupe" id="zoomLoupe" style="display: none;"></div>
+
+                        <div class="placeholder-text" id="previewPlaceholder">
+                            <p>Upload an image to preview results and compare before/after live</p>
+                        </div>
+                    </div>
+
+                    <!-- Region Selector Helper -->
+                    <div class="region-helper" id="regionHelper" style="display: none;">
+                        <p id="helperText">💡 Click and drag on the image above to select custom logo/watermark regions to erase.</p>
+                        <button class="btn secondary-btn" onclick="clearRegions()">Clear Selected Regions</button>
+                    </div>
+
+                    <!-- Real-time Progress Bar -->
+                    <div class="progress-section" id="progressSection" style="display: none;">
+                        <div class="progress-header">
+                            <span id="progressText">Processing image...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

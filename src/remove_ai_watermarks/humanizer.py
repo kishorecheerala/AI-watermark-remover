@@ -9,9 +9,12 @@ counters the soft, over-smoothed look that the diffusion pass leaves behind
 # cv2/numpy boundary: third-party libs ship no usable element types; relax the
 # unknown-type rules for this file only.
 # pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false, reportUnknownParameterType=false, reportMissingTypeArgument=false, reportMissingTypeStubs=false, reportMissingImports=false, reportArgumentType=false, reportAssignmentType=false, reportReturnType=false, reportCallIssue=false, reportIndexIssue=false, reportOperatorIssue=false, reportOptionalMemberAccess=false, reportOptionalCall=false, reportOptionalSubscript=false, reportOptionalOperand=false, reportAttributeAccessIssue=false, reportPrivateImportUsage=false, reportPrivateUsage=false, reportInvalidTypeForm=false, reportConstantRedefinition=false, reportUnnecessaryComparison=false
+from __future__ import annotations
+
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+
 
 
 def apply_analog_humanizer(image: NDArray, grain_intensity: float = 4.0, chromatic_shift: int = 1) -> NDArray:
@@ -83,8 +86,11 @@ def unsharp_mask(image: NDArray, amount: float = 0.5, sigma: float = 1.0) -> NDA
         return image.copy()
     img_f = image.astype(np.float32)
     blurred = cv2.GaussianBlur(img_f, (0, 0), sigmaX=sigma, sigmaY=sigma)
+    if float(np.max(np.abs(img_f - blurred))) < 1e-4:
+        return image.copy()
     sharpened = cv2.addWeighted(img_f, 1.0 + amount, blurred, -amount, 0.0)
     return np.clip(sharpened, 0, 255).astype(np.uint8)
+
 
 
 # ── Adaptive polish (target the input's detail level; spare text) ──────────────

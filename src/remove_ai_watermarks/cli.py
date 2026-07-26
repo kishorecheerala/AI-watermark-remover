@@ -1751,5 +1751,79 @@ def cmd_batch(
         raise SystemExit(1)
 
 
+@main.command("video")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Target output video file path.")
+@click.option("--mark", type=str, default="auto", help="Watermark name (e.g. gemini, kling, doubao, samsung, auto).")
+@click.option("--region", type=str, default=None, help="Custom region box 'x,y,w,h'.")
+@_visible_backend_option
+@click.pass_context
+def cmd_video(
+    ctx: click.Context,
+    input_path: Path,
+    output: Path | None,
+    mark: str,
+    region: str | None,
+    backend: str,
+) -> None:
+    """Remove visible AI watermarks from a video file with anti-flicker smoothing."""
+    from remove_ai_watermarks.video_engine import process_video
+
+    _banner()
+    if output is None:
+        output = input_path.parent / f"{input_path.stem}_clean{input_path.suffix}"
+
+    parsed_region = _parse_region(region) if region else None
+    console.print(f"  Processing video: {input_path.name}")
+    console.print(f"  Output -> {output}")
+
+    try:
+        res = process_video(
+            input_path=input_path,
+            output_path=output,
+            mark_name=mark if mark != "auto" else None,
+            region=parsed_region,
+            backend=backend, # type: ignore
+        )
+        console.print(f"✓ Video watermark removal complete -> {res}")
+    except Exception as e:
+        console.print(f"Error processing video: {e}")
+        raise SystemExit(1)
+
+
+@main.command("audio")
+@click.argument("input_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("-o", "--output", type=click.Path(path_type=Path), default=None, help="Target output audio file path.")
+@click.option("--intensity", type=float, default=0.05, help="Spectral perturbation intensity (0.01-0.10).")
+@click.pass_context
+def cmd_audio(
+    ctx: click.Context,
+    input_path: Path,
+    output: Path | None,
+    intensity: float,
+) -> None:
+    """Remove container metadata and neutralize invisible audio watermarks."""
+    from remove_ai_watermarks.audio_engine import process_audio
+
+    _banner()
+    if output is None:
+        output = input_path.parent / f"{input_path.stem}_clean{input_path.suffix}"
+
+    console.print(f"  Processing audio: {input_path.name}")
+    console.print(f"  Output -> {output}")
+
+    try:
+        res = process_audio(
+            input_path=input_path,
+            output_path=output,
+            intensity=intensity,
+        )
+        console.print(f"✓ Audio processing complete -> {res}")
+    except Exception as e:
+        console.print(f"Error processing audio: {e}")
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()
+

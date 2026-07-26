@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "AI Watermark Remover Studio",
+  "version": "1.0.0",
+  "description": "Right-click any web image or video to strip AI watermarks and provenance metadata instantly.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "downloads"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "AI Watermark Cleaner"
+  }
+}

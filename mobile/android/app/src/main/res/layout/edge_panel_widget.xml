@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#1E1E2E">
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="✨ AI Watermark Cleaner"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="8dp" />
+
+    <Button
+        android:id="@+id/btn_clean_latest"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginBottom="8dp"
+        android:text="⚡ Clean Latest Item"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#6366F1"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btn_open_samsung_editor"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="🎬 Open Samsung Editor"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#10B981"
+        android:textSize="12sp" />
+
+</LinearLayout>

@@ -59,6 +59,18 @@ _ALPHA_NATIVE_WIDTH = 1086
 _ALPHA_WIDTH_FRAC = 0.3195  # asset width / image width -- sizes the detection silhouette
 _ALPHA_HEIGHT_FRAC = 0.0378
 
+# Support multi-lingual Galaxy AI variants (English, Italian, Spanish, German, French, Chinese, Korean)
+# The mark is always stamped in the bottom-left corner with a width fraction of ~0.35-0.45.
+SAMSUNG_LOCALE_VARIANTS = [
+    "✦ Contenuti generati dall'AI",
+    "✦ Generative AI Content",
+    "✦ Contenido generado con IA",
+    "✦ Mit KI generierte Inhalte",
+    "✦ Contenu généré par IA",
+    "✦ AI 生成的内容",
+    "✦ AI로 생성한 콘텐츠",
+]
+
 _CONFIG = TextMarkConfig(
     name="Samsung Galaxy AI",
     asset_name="samsung_alpha.png",
@@ -73,11 +85,12 @@ _CONFIG = TextMarkConfig(
     tophat_delta=TOPHAT_DELTA,
     morph_open_size=3,
     detect_min_coverage=DETECT_MIN_COVERAGE,
-    detect_ncc_threshold=DETECT_NCC_THRESHOLD,
+    detect_ncc_threshold=0.35,  # Slightly relaxed threshold for multi-lingual Galaxy AI variants
     alpha_width_frac=_ALPHA_WIDTH_FRAC,
     alpha_height_frac=_ALPHA_HEIGHT_FRAC,
     min_gw=16,
 )
+
 
 SamsungDetection = TextMarkDetection
 

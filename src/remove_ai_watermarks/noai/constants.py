@@ -4,6 +4,8 @@ All modules reference these constants rather than hard-coding values,
 so adding a new AI tool or metadata key requires updating only this file.
 """
 
+from __future__ import annotations
+
 from typing import NamedTuple
 
 # Supported image formats for the pixel/removal path (CLI input validation + batch

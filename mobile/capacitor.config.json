@@ -1,0 +1,9 @@
+{
+  "appId": "com.ai.watermarkremover",
+  "appName": "AI Watermark Remover Studio",
+  "webDir": "../web",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

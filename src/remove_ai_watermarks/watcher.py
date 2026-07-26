@@ -1,0 +1,56 @@
+"""Live Folder Watcher Service for AI Watermark Remover Studio.
+
+Monitors an input folder continuously; any newly saved image file is automatically
+cleaned of AI watermarks/metadata and exported to the output folder.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import sys
+import time
+from pathlib import Path
+from remove_ai_watermarks import api
+
+logger = logging.getLogger("raiw.watcher")
+
+SUPPORTED_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".heic"}
+
+
+def watch_folder(input_dir: str | Path, output_dir: str | Path, poll_interval: float = 2.0) -> None:
+    """Continuously monitor input_dir and clean newly added images to output_dir."""
+    in_path = Path(input_dir)
+    out_path = Path(output_dir)
+    in_path.mkdir(parents=True, exist_ok=True)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    processed_files: set[Path] = set()
+
+    print(f"[*] Live Folder Watcher Daemon started.")
+    print(f"    Monitoring Input:  {in_path.resolve()}")
+    print(f"    Exporting Cleaned: {out_path.resolve()}")
+
+    try:
+        while True:
+            for file_path in in_path.iterdir():
+                if file_path.is_file() and file_path.suffix.lower() in SUPPORTED_EXTS:
+                    if file_path not in processed_files:
+                        target_file = out_path / file_path.name
+                        print(f"[{time.strftime('%H:%M:%S')}] Auto-cleaning new file: {file_path.name}...")
+                        try:
+                            api.remove_visible(file_path, target_file, strip_metadata=True)
+                            processed_files.add(file_path)
+                            print(f"    ✅ Exported: {target_file.name}")
+                        except Exception as e:
+                            logger.error("Failed to clean %s: %s", file_path.name, e)
+            time.sleep(poll_interval)
+    except KeyboardInterrupt:
+        print("\n[*] Live Folder Watcher stopped.")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python3 -m remove_ai_watermarks.watcher <input_dir> <output_dir>")
+        sys.exit(1)
+    watch_folder(sys.argv[1], sys.argv[2])
