@@ -102,6 +102,7 @@ def test_yunet_download_targets_verified_lfs_artifact():
 
 
 def test_resident_face_models_disable_vram_offload():
+    pytest.importorskip("torch")
     from remove_ai_watermarks.noai.qwen_zimage_pipeline import (
         QwenZImagePipeline,
         _pin_vram_managed_models,
@@ -184,7 +185,7 @@ def test_static_prompt_cache_reuses_embeddings_without_caching_image_edits():
 
 
 def test_sam_pixels_match_model_dtype_without_casting_boxes():
-    import torch
+    torch = pytest.importorskip("torch")
 
     from remove_ai_watermarks.noai.qwen_zimage_pipeline import _prepare_sam_inputs
 
@@ -254,7 +255,7 @@ def test_sam_proposal_selection_matches_impact_sub_threshold():
 
 
 def test_sam_bfloat16_outputs_convert_to_numpy_float32():
-    import torch
+    torch = pytest.importorskip("torch")
 
     from remove_ai_watermarks.noai.qwen_zimage_pipeline import _sam_outputs_to_numpy
 
