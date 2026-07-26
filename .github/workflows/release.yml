@@ -37,13 +37,10 @@ jobs:
         working-directory: mobile
         run: npm ci
 
-      # cap sync = cap copy + cap update: copies web assets AND regenerates
-      # the capacitor-cordova-android-plugins Gradle subproject (gitignored).
       - name: Sync Capacitor Android platform
         working-directory: mobile
         run: npx cap sync android
 
-      # Override local.properties with CI Android SDK path
       - name: Configure Android SDK path
         run: echo "sdk.dir=$ANDROID_HOME" > mobile/android/local.properties
 
@@ -55,18 +52,23 @@ jobs:
 
       - name: Build debug APK
         working-directory: mobile/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -100
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Locate and rename APK
-        if: success()
         run: |
-          APK_PATH=$(find mobile/android/app/build/outputs/apk -name '*.apk' | head -1)
+          echo "Searching for APK files..."
+          find mobile/android -name '*.apk' -type f 2>/dev/null || true
+          APK_PATH=$(find mobile/android/app/build/outputs -name '*.apk' -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "ERROR: No APK found in build outputs!"
+            find mobile/android/app/build -type f -name '*.apk' 2>/dev/null || echo "No APK files anywhere"
+            exit 1
+          fi
           cp "$APK_PATH" AI-Watermark-Remover-Studio.apk
           APK_SIZE=$(du -h AI-Watermark-Remover-Studio.apk | cut -f1)
-          echo "Found APK: $APK_PATH ($APK_SIZE)"
+          echo "✅ APK ready: $APK_PATH ($APK_SIZE)"
 
       - name: Create or Update GitHub Release
-        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
