@@ -30,6 +30,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Install Capacitor dependencies
         working-directory: mobile
@@ -48,12 +50,15 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x mobile/android/gradlew
 
+      - name: Accept SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Build debug APK
         working-directory: mobile/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -100
 
       - name: Locate and rename APK
-        id: apk
+        if: success()
         run: |
           APK_PATH=$(find mobile/android/app/build/outputs/apk -name '*.apk' | head -1)
           cp "$APK_PATH" AI-Watermark-Remover-Studio.apk
@@ -61,6 +66,7 @@ jobs:
           echo "Found APK: $APK_PATH ($APK_SIZE)"
 
       - name: Create or Update GitHub Release
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
