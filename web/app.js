@@ -12,13 +12,70 @@ let isFlipV = false;
 
 function rotateCanvas(angle) {
     currentRotateAngle = (currentRotateAngle + angle) % 360;
-    alert(`Canvas rotation set to ${currentRotateAngle}°`);
+    showToast(`Canvas rotation: ${currentRotateAngle}°`);
 }
 
 function toggleFlip(dir) {
     if (dir === 'h') isFlipH = !isFlipH;
     if (dir === 'v') isFlipV = !isFlipV;
-    alert(`Canvas flip set to H:${isFlipH}, V:${isFlipV}`);
+    showToast(`Canvas flip: H:${isFlipH ? 'On' : 'Off'}, V:${isFlipV ? 'On' : 'Off'}`);
+}
+
+function showToast(msg) {
+    const existing = document.querySelector(".studio-toast");
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.className = "studio-toast";
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.95);
+        color: #f8fafc;
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        z-index: 2000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        backdrop-filter: blur(8px);
+    `;
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+
+function switchMobileView(view) {
+    const tabs = document.querySelectorAll(".mobile-tab-btn");
+    tabs.forEach(t => t.classList.remove("active"));
+
+    const activeIndex = view === 'preview' ? 0 : (view === 'controls' ? 1 : 2);
+    if (tabs[activeIndex]) tabs[activeIndex].classList.add("active");
+
+    const controlsPanel = document.getElementById("controlsPanel");
+    const previewPanel = document.getElementById("previewPanel");
+    const auditCard = document.getElementById("auditCard");
+
+    if (window.innerWidth <= 768) {
+        if (view === 'preview') {
+            previewPanel.style.display = "block";
+            controlsPanel.style.display = "none";
+        } else if (view === 'controls') {
+            previewPanel.style.display = "none";
+            controlsPanel.style.display = "flex";
+            if (auditCard) auditCard.style.display = "none";
+        } else if (view === 'audit') {
+            previewPanel.style.display = "none";
+            controlsPanel.style.display = "flex";
+            if (auditCard) auditCard.style.display = "block";
+        }
+    } else {
+        previewPanel.style.display = "flex";
+        controlsPanel.style.display = "flex";
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("comparisonContainer");
 
     dropZone.addEventListener("click", (e) => {
-        if (e.target.tagName !== "BUTTON") {
+        if (e.target.tagName !== "BUTTON" && e.target.tagName !== "INPUT") {
             fileInput.click();
         }
     });
@@ -44,12 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     dropZone.addEventListener("dragleave", () => {
-        dropZone.style.borderColor = "#334155";
+        dropZone.style.borderColor = "rgba(99, 102, 241, 0.3)";
     });
 
     dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = "#334155";
+        dropZone.style.borderColor = "rgba(99, 102, 241, 0.3)";
         if (e.dataTransfer.files.length > 0) {
             handleFiles(Array.from(e.dataTransfer.files));
         }
@@ -61,9 +118,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 768) {
+            document.getElementById("controlsPanel").style.display = "flex";
+            document.getElementById("previewPanel").style.display = "flex";
+        }
+    });
+
     initSlider();
     initZoomLoupe();
 });
+
+function setProcessButtonsDisabled(disabled) {
+    const btn1 = document.getElementById("processBtn");
+    const btn2 = document.getElementById("mobileProcessBtn");
+    if (btn1) btn1.disabled = disabled;
+    if (btn2) btn2.disabled = disabled;
+}
 
 function handleFiles(files) {
     if (files.length === 1) {
@@ -84,9 +155,14 @@ function loadImage(file) {
         document.getElementById("imgBefore").src = originalB64;
         document.getElementById("imgAfter").src = originalB64;
         document.getElementById("previewPlaceholder").style.display = "none";
-        document.getElementById("processBtn").disabled = false;
         
+        setProcessButtonsDisabled(false);
         auditImage(file);
+
+        // On mobile, switch to preview view when file is loaded
+        if (window.innerWidth <= 768) {
+            switchMobileView('preview');
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -100,7 +176,7 @@ function renderBatchQueue() {
     batchCount.innerText = batchFiles.length;
     batchList.innerHTML = "";
 
-    batchFiles.forEach((f, idx) => {
+    batchFiles.forEach((f) => {
         const item = document.createElement("div");
         item.className = "batch-item";
         item.innerHTML = `<span>${f.name}</span><span style="color:#94a3b8">${(f.size / 1024).toFixed(1)} KB</span>`;
@@ -145,10 +221,10 @@ async function auditImage(file) {
                 signalsEl.appendChild(chip);
             });
         } else {
-            signalsEl.innerHTML = "<span style='font-size:0.8rem; color:#94a3b8;'>No AI signatures detected</span>";
+            signalsEl.innerHTML = "<span style='font-size:0.75rem; color:#94a3b8;'>No AI signatures detected</span>";
         }
     } catch (err) {
-        platformEl.innerText = "Inspection Error";
+        platformEl.innerText = "Local inspection active";
         console.error(err);
     }
 }
@@ -175,7 +251,7 @@ async function handleMagicWandClick(e) {
         const res = await resp.json();
         if (res.bbox) {
             customRegions.push(res.bbox);
-            alert(`🪄 Magic Wand Auto-Contour Selected Box: [x:${res.bbox[0]}, y:${res.bbox[1]}, w:${res.bbox[2]}, h:${res.bbox[3]}]`);
+            showToast(`🪄 Magic Wand Box: [x:${res.bbox[0]}, y:${res.bbox[1]}, w:${res.bbox[2]}, h:${res.bbox[3]}]`);
         }
     } catch (err) {
         console.error(err);
@@ -185,31 +261,41 @@ async function handleMagicWandClick(e) {
 async function processImage() {
     if (!originalB64) return;
 
-    const processBtn = document.getElementById("processBtn");
     const progressSection = document.getElementById("progressSection");
     const progressBarFill = document.getElementById("progressBarFill");
     const progressText = document.getElementById("progressText");
     const progressPercent = document.getElementById("progressPercent");
 
-    processBtn.disabled = true;
+    setProcessButtonsDisabled(true);
     progressSection.style.display = "block";
     progressBarFill.style.width = "20%";
     progressPercent.innerText = "20%";
     progressText.innerText = "Running visible watermark localized inpainting...";
 
+    const backendEl = document.getElementById("backendSelect");
+    const sensEl = document.getElementById("sensitivitySelect");
+    const stripEl = document.getElementById("stripMetadata");
+    const humanEl = document.getElementById("humanizerToggle");
+    const faceEl = document.getElementById("faceEnhance");
+    const textEl = document.getElementById("watermarkText");
+    const colorEl = document.getElementById("autoEnhance");
+    const denoiseEl = document.getElementById("denoiseToggle");
+    const aspectEl = document.getElementById("aspectRatioSelect");
+    const fitEl = document.getElementById("fitModeSelect");
+
     const payload = {
         image: originalB64,
         options: {
-            backend: document.getElementById("backendSelect").value,
-            sensitivity: document.getElementById("sensitivitySelect").value,
-            strip_metadata: document.getElementById("stripMetadata").checked,
-            humanizer: document.getElementById("humanizerToggle").checked,
-            face_enhance: document.getElementById("faceEnhance").checked,
-            watermark_text: document.getElementById("watermarkText").value,
-            auto_enhance: document.getElementById("autoEnhance").checked,
-            denoise: document.getElementById("denoiseToggle").checked,
-            aspect_ratio: document.getElementById("aspectRatioSelect").value,
-            fit_mode: document.getElementById("fitModeSelect").value,
+            backend: backendEl ? backendEl.value : "auto",
+            sensitivity: sensEl ? sensEl.value : "medium",
+            strip_metadata: stripEl ? stripEl.checked : true,
+            humanizer: humanEl ? humanEl.checked : false,
+            face_enhance: faceEl ? faceEl.checked : false,
+            watermark_text: textEl ? textEl.value : "",
+            auto_enhance: colorEl ? colorEl.checked : false,
+            denoise: denoiseEl ? denoiseEl.checked : false,
+            aspect_ratio: aspectEl ? aspectEl.value : "original",
+            fit_mode: fitEl ? fitEl.value : "blur_pad",
             rotate: currentRotateAngle,
             flip_h: isFlipH,
             flip_v: isFlipV,
@@ -237,13 +323,18 @@ async function processImage() {
 
             processedB64 = res.image_b64;
             document.getElementById("imgAfter").src = processedB64;
+            showToast("✨ Image processed successfully!");
+
+            if (window.innerWidth <= 768) {
+                switchMobileView('preview');
+            }
         } else {
             alert("Error: " + res.error);
         }
     } catch (err) {
         alert("Failed to process image: " + err);
     } finally {
-        processBtn.disabled = false;
+        setProcessButtonsDisabled(false);
     }
 }
 
@@ -254,41 +345,62 @@ function initSlider() {
 
     let isDragging = false;
 
-    slider.addEventListener("mousedown", () => isDragging = true);
-    window.addEventListener("mouseup", () => isDragging = false);
-
-    window.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
+    const updateSlider = (clientX) => {
         const rect = container.getBoundingClientRect();
-        let x = e.clientX - rect.left;
+        let x = clientX - rect.left;
         if (x < 0) x = 0;
         if (x > rect.width) x = rect.width;
 
         const percent = (x / rect.width) * 100;
         overlay.style.width = `${percent}%`;
         slider.style.left = `${percent}%`;
+    };
+
+    // Mouse Events
+    slider.addEventListener("mousedown", () => isDragging = true);
+    window.addEventListener("mouseup", () => isDragging = false);
+    window.addEventListener("mousemove", (e) => {
+        if (isDragging) updateSlider(e.clientX);
     });
+
+    // Touch Events for Mobile Responsiveness
+    slider.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        if (e.touches.length > 0) updateSlider(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => isDragging = false);
+    window.addEventListener("touchmove", (e) => {
+        if (isDragging && e.touches.length > 0) {
+            updateSlider(e.touches[0].clientX);
+        }
+    }, { passive: true });
 }
 
 function initZoomLoupe() {
     const container = document.getElementById("comparisonContainer");
     const loupe = document.getElementById("zoomLoupe");
 
-    container.addEventListener("mousemove", (e) => {
-        if (!isZoomActive || !processedB64 && !originalB64) return;
+    const updateLoupe = (clientX, clientY) => {
+        if (!isZoomActive || (!processedB64 && !originalB64)) return;
 
         const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
 
-        loupe.style.left = `${x - 80}px`;
-        loupe.style.top = `${y - 80}px`;
+        loupe.style.left = `${x - 70}px`;
+        loupe.style.top = `${y - 70}px`;
 
         const bgImg = processedB64 || originalB64;
         loupe.style.backgroundImage = `url(${bgImg})`;
         loupe.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
-        loupe.style.backgroundPosition = `-${x * 2 - 80}px -${y * 2 - 80}px`;
-    });
+        loupe.style.backgroundPosition = `-${x * 2 - 70}px -${y * 2 - 70}px`;
+    };
+
+    container.addEventListener("mousemove", (e) => updateLoupe(e.clientX, e.clientY));
+    container.addEventListener("touchmove", (e) => {
+        if (e.touches.length > 0) updateLoupe(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
 }
 
 function toggleZoomLoupe() {
@@ -313,22 +425,22 @@ function setPreviewMode(mode) {
 
     if (mode === "heatmap") {
         imgHeatmap.style.display = "block";
-        helper.style.display = "none";
+        if (helper) helper.style.display = "none";
     } else if (mode === "wand") {
         imgHeatmap.style.display = "none";
-        helper.style.display = "block";
-        helperText.innerText = "🪄 Click anywhere on the image above to auto-detect and snap to logo/text contours.";
+        if (helper) helper.style.display = "flex";
+        if (helperText) helperText.innerText = "🪄 Tap anywhere on image to auto-detect watermark contours.";
     } else if (mode === "erase") {
         imgHeatmap.style.display = "none";
-        helper.style.display = "block";
-        helperText.innerText = "💡 Click and drag on the image above to select custom logo/watermark regions to erase.";
+        if (helper) helper.style.display = "flex";
+        if (helperText) helperText.innerText = "💡 Drag on image to select custom regions to erase.";
     } else {
         imgHeatmap.style.display = "none";
-        helper.style.display = "none";
+        if (helper) helper.style.display = "none";
     }
 }
 
 function clearRegions() {
     customRegions = [];
-    alert("Custom regions cleared.");
+    showToast("Custom regions cleared");
 }
