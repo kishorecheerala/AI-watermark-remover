@@ -166,20 +166,41 @@
                 </div>
 
                 <!-- 5. Metadata & Provenance Audit Card -->
-                <div class="card audit-card" id="auditCard" style="display: none;">
+                <div class="card audit-card" id="auditCard">
                     <div class="card-title">
-                        <span>🔍 Metadata & Provenance Inspector</span>
+                        <span>🔍 EXIF & AI Provenance Inspector</span>
                     </div>
-                    <div class="audit-info">
+                    <div class="audit-info" id="auditInfoContainer">
                         <div class="audit-row">
-                            <span class="label">Detected Origin:</span>
-                            <span class="value" id="originPlatform">Analyzing...</span>
+                            <span class="label">Detected AI Origin:</span>
+                            <span class="value" id="originPlatform">No file selected</span>
                         </div>
                         <div class="audit-row">
-                            <span class="label">Confidence:</span>
-                            <span class="value" id="originConfidence">-</span>
+                            <span class="label">AI Confidence / Risk:</span>
+                            <span class="value" id="originConfidence">0%</span>
                         </div>
-                        <div id="signalsList" class="signals-list"></div>
+                        <div class="audit-row">
+                            <span class="label">Camera / Software:</span>
+                            <span class="value" id="cameraSoftware">-</span>
+                        </div>
+                        <div class="audit-row">
+                            <span class="label">EXIF Tags Count:</span>
+                            <span class="value" id="exifTagsCount">-</span>
+                        </div>
+                        <div class="audit-row">
+                            <span class="label">Dimensions:</span>
+                            <span class="value" id="fileDimensions">-</span>
+                        </div>
+                        
+                        <div class="audit-section-title">Detected AI Signatures & Watermarks</div>
+                        <div id="signalsList" class="signals-list">
+                            <span class="signal-placeholder">Upload an image to inspect EXIF metadata, AI signatures, C2PA claims, and camera headers.</span>
+                        </div>
+
+                        <div class="audit-section-title">Extracted EXIF & Metadata Tags</div>
+                        <div id="exifTableContainer" class="exif-table-container">
+                            <span class="signal-placeholder">No metadata parsed yet</span>
+                        </div>
                     </div>
                 </div>
             </section>
