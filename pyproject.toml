@@ -51,7 +51,7 @@ dependencies = [
     # and pillow-heif (bundled libheif, prebuilt wheels) registers the HEIF+AVIF
     # openers. The metadata path already handles them via a plugin-free binary scan;
     # this closes the same gap for the pixel path so `visible`/`all` work on them.
-    "pillow-heif>=0.13.0",
+    "pillow-heif>=1.5.0",
     "piexif>=1.1.3",
     "numpy>=1.24.0,<2",
 
@@ -65,7 +65,7 @@ dependencies = [
     # synthetic/partial blobs the validator rejects. Binary wheel (Rust), but the
     # import is light (no torch/numpy) so it fits the dependency-light identify
     # host. Prebuilt wheels cover the full CI matrix (linux/macos/windows).
-    "c2pa-python>=0.35.0",
+    "c2pa-python>=0.37.6",
 ]
 
 [project.optional-dependencies]
@@ -90,7 +90,7 @@ gpu = [
     # ``RobertaProcessing.__new__() got an unexpected keyword argument 'cls'``.
     # Cap tokenizers to the stable 0.22 line (transformers 5.x accepts
     # >=0.22,<=0.23.0) so the rc is excluded while SDXL still loads.
-    "transformers>=5,<6",
+    "transformers>=5.15.0,<6",
     "tokenizers>=0.22,<0.23",
     "accelerate>=0.25.0",
     "safetensors",
@@ -101,7 +101,7 @@ gpu = [
 # additional model stack and DiffSynth runtime are large.
 qwen-zimage = [
     "remove-ai-watermarks[gpu]",
-    "diffsynth>=2.0.17,<3",
+    "diffsynth>=2.1.1,<3",
     "torchvision>=0.20.0",
 ]
 # Open invisible-watermark (imwatermark) decoder for detecting the DWT-DCT
@@ -127,7 +127,7 @@ trustmark = [
 # eraser backend needs none of this.
 lama = [
     "onnxruntime>=1.16.0",
-    "huggingface-hub>=0.20.0",
+    "huggingface-hub>=1.27.0",
 ]
 # Lightweight inpaint backend -- MI-GAN via onnxruntime (andraniksargsyan/migan,
 # MIT). CPU, no torch. Model (~28 MB) downloaded on first use and cached by
@@ -136,7 +136,7 @@ lama = [
 # for the visible-mark fallback when installed. Same runtime as `lama`.
 migan = [
     "onnxruntime>=1.16.0",
-    "huggingface-hub>=0.20.0",
+    "huggingface-hub>=1.27.0",
 ]
 # Optional pre-diffusion super-resolution for small inputs (Real-ESRGAN). Loaded via
 # spandrel (MIT) -- a pure model-loader with NO basicsr dependency (it pulls only
@@ -154,8 +154,8 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
     "pytest-xdist>=3.5.0",
-    "pytest-rerunfailures>=14.0",
-    "ruff>=0.4.0",
+    "pytest-rerunfailures>=16.5",
+    "ruff>=0.16.2",
     "pyright>=1.1.0",
     "invisible-watermark>=0.2.0",
 ]
